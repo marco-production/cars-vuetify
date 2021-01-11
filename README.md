@@ -1,4 +1,4 @@
-# cars-vuejs
+# Cars Vuetify
 
 ## Project setup
 ```
