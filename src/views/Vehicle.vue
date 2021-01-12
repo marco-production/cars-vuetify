@@ -6,9 +6,8 @@
                     <v-btn class="ma-2 white--text mb-1" depressed small color="blue-grey" @click="newVehicle = false"><v-icon dark>mdi-keyboard-backspace</v-icon> Go back</v-btn>
                 </div>
             </div>
-            <!-- v-slot="{ invalid }" -->
               <validation-observer ref="observer">
-                <form @submit.prevent="createVehicle" class="mt-5">
+                <form @submit.prevent="submit" class="mt-5">
                     <v-row>
                         <v-col md="6" cols="12">
                             <validation-provider name="Make" rules="required" v-slot="{errors}">
@@ -39,14 +38,10 @@
                         <v-col cols="12" class="text-right">
                             <v-btn class="mr-4" @click="clear">clear</v-btn>
                             <v-btn class="white--text" color="green" type="submit">Create</v-btn>
-                            <!-- :disabled="invalid" -->
                         </v-col>
                     </v-row>
                 </form>
             </validation-observer>
-        </v-container>
-        <v-container v-else-if="editVehicle">
-            edit
         </v-container>
         <v-container v-else>
             <div class="text-left">
@@ -59,16 +54,18 @@
                     <v-card class="mt-5" max-width="344">
                         <v-img :src="vehicle.image" height="200px"></v-img>
                         <v-card-title>{{vehicle.make.name}} {{vehicle.model.name}} {{vehicle.year}}</v-card-title>
-                        <v-card-subtitle>{{vehicle.image}}</v-card-subtitle>
+                        <v-card-subtitle>{{vehicle.vehicle_type.name}} | {{vehicle.fuel.name}} | {{vehicle.condition == 1 ? 'New' : 'Used'}}</v-card-subtitle>
 
                         <v-card-actions>
-                            <v-btn color="blue lighten-2" text>Explore</v-btn>
-
-                            <v-spacer></v-spacer>
-
                             <v-btn icon @click="show = !show" v-if="vehicle.description">
                                 <v-icon>{{ show ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
                             </v-btn>
+
+                            <v-spacer></v-spacer>
+
+                            <v-icon medium class="ml-2 mr-2">mdi-delete</v-icon>
+                            <v-icon medium class="mr-2" @click="editVehicle(vehicle)">mdi-pencil</v-icon>
+                            <v-icon medium>mdi-eye</v-icon>
                         </v-card-actions>
 
                         <v-expand-transition v-if="vehicle.description">
@@ -106,18 +103,18 @@ for (let [rule, validation] of Object.entries(rules)) {
 export default {
     data() {
         return {
-            api_token: 'yJsEhmB5HpnuvPMu',
+            apiToken: 'yJsEhmB5HpnuvPMu',
             vehicles:[],
             show: false,
             newVehicle: false,
-            editVehicle: false,
+            vehicleIndex: -1,
 
             vehicle:{ make:'', model:'', year:'', vehicle_type:'', fuel:'', condition: true, chassis:'', description:'', status: true, image:[] },
             makes:[],
             models:[],
             fuels:[],
             vehicleTypes:[],
-            condition:[{name: 'New', value: true}, {name: 'Used', value: false}],
+            condition:[{name: 'New', value: 1}, {name: 'Used', value: 0}],
             select: null,
             items: [
                 'Item 1',
@@ -139,17 +136,18 @@ export default {
     },
     methods: {
         getVehicles(){
-            axios.get(`${this.$apiUrl}/vehicles?api_token=${this.api_token}`)
+            axios.get(`${this.$apiUrl}/vehicles?api_token=${this.apiToken}`)
             .then((res)=>{
                 this.vehicles = res.data;
-                //console.log(this.vehicles);
+                console.log(this.vehicles);
             })
             .catch((err)=>{
                 console.log(err);
             });
         },
+
         getMakes(){
-            axios.get(`${this.$apiUrl}/makes?api_token=${this.api_token}`)
+            axios.get(`${this.$apiUrl}/makes?api_token=${this.apiToken}`)
             .then((res)=>{
                 this.makes = res.data;
             })
@@ -157,8 +155,9 @@ export default {
                 console.log(err);
             });
         },
+
         getModels(){
-            axios.get(`${this.$apiUrl}/models?api_token=${this.api_token}&make=${this.vehicle.make}`)
+            axios.get(`${this.$apiUrl}/models?api_token=${this.apiToken}&make=${this.vehicle.make}`)
             .then((res)=>{
                 this.models = res.data;
             })
@@ -166,8 +165,9 @@ export default {
                 console.log(err);
             });
         },
+
         getFuels(){
-            axios.get(`${this.$apiUrl}/fuels?api_token=${this.api_token}`)
+            axios.get(`${this.$apiUrl}/fuels?api_token=${this.apiToken}`)
             .then((res)=>{
                 this.fuels = res.data;
             })
@@ -175,8 +175,9 @@ export default {
                 console.log(err);
             });
         },
+
         getVehicleTypes(){
-            axios.get(`${this.$apiUrl}/vehicletypes?api_token=${this.api_token}`)
+            axios.get(`${this.$apiUrl}/vehicletypes?api_token=${this.apiToken}`)
             .then((res)=>{
                 this.vehicleTypes = res.data;
             })
@@ -184,39 +185,56 @@ export default {
                 console.log(err);
             });
         },
-        async createVehicle() {
+
+        createVehicle() {
+
+            console.log(this.vehicle.image);
+            let fd= new FormData();
+            fd.append('image', this.vehicle.image);
+
+            let params = {
+                make_id: this.vehicle.make, 
+                model_id: this.vehicle.model,
+                fuel_id: this.vehicle.fuel, 
+                vehicle_type_id: this.vehicle.vehicle_type,
+                year: this.vehicle.year, 
+                chassis: this.vehicle.chassis,
+                condition: this.vehicle.condition, 
+                description: this.vehicle.description,
+                status: this.vehicle.status,
+                //image: this.vehicle.image, 
+            };
+
+            fd.append();
+
+            //const headers = {headers: {'Content-Type': 'multipart/form-data' }};
+
+            axios.post(`${this.$apiUrl}/vehicles?api_token=${this.apiToken}`,params/* , headers */)
+            .then((res)=>{
+                this.vehicles.splice(0,0,res.data);
+                //console.log(res.data);
+            })
+            .catch((err)=>{
+                console.log(err);
+            });
+        },
+
+        updateVehicle(){
+
+        },
+
+        editVehicle(vehicle){
+            console.log(vehicle);
+        },
+
+        async submit(){
             const isValid = await this.$refs.observer.validate();
             if(isValid){
-                
-                console.log(this.vehicle.image);
-                let fd= new FormData();
-                fd.append('image', this.vehicle.image);
-
-                let params = {
-                    make_id: this.vehicle.make, 
-                    model_id: this.vehicle.model,
-                    fuel_id: this.vehicle.fuel, 
-                    vehicle_type_id: this.vehicle.vehicle_type,
-                    year: this.vehicle.year, 
-                    chassis: this.vehicle.chassis,
-                    condition: this.vehicle.condition, 
-                    description: this.vehicle.description,
-                    status: this.vehicle.status,
-                    image: this.vehicle.image, 
-                };
-
-                //const headers = {headers: {'Content-Type': 'multipart/form-data' }};
-
-                axios.post(`${this.$apiUrl}/vehicles?api_token=${this.api_token}`,params/* , headers */)
-                .then((res)=>{
-                    console.log(res.data);
-                })
-                .catch((err)=>{
-                    console.log(err);
-                });
-            }
-            else{
-                console.log('klk');
+                if (this.vehicleIndex > -1) {
+                    this.updateVehicle();
+                } else {
+                    this.createVehicle();
+                }
             }
         },
         clear () {

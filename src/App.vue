@@ -86,5 +86,11 @@ export default {
     ],
     right: null,
   }),
+  
+  /*watch: {
+    '$route' (to,from) {
+      document.title = to.meta.title || 'Your Website'
+    }
+  },*/
 };
 </script>

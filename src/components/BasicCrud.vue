@@ -170,7 +170,7 @@ export default {
     },
 
     deleteItem(){
-      axios.delete(`${this.$apiUrl}/${this.endpoint}?api_token=${this.apiToken}&id=${this.editedItem.id}`)
+      axios.delete(`${this.$apiUrl}/${this.endpoint}/${this.editedItem.id}?api_token=${this.apiToken}`)
       .then(()=>{
         this.items.splice(this.editedIndex, 1);
         this.closeDelete();
