@@ -7,6 +7,9 @@ const app = express()
 
 app.use(cors())
 
+//here we are configuring dist to serve app files
+app.use('/', serveStatic(path.join(__dirname, '/dist')))
+
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Authorization");
@@ -15,9 +18,6 @@ app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Credentials", "true");
 	next();
 });
-
-//here we are configuring dist to serve app files
-app.use('/', serveStatic(path.join(__dirname, '/dist')))
 
 // this * route is to serve project on different page routes except root `/`
 app.get(/.*/, function (req, res) {
