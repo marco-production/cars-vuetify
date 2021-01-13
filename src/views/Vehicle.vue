@@ -3,18 +3,20 @@
         <v-container v-if="newVehicle">
             <div class="text-left">
                 <div class="my-2">
-                    <v-btn class="ma-2 white--text mb-1" depressed small color="blue-grey" @click="newVehicle = false"><v-icon dark>mdi-keyboard-backspace</v-icon> Go back</v-btn>
+                    <v-btn class="ma-2 white--text mb-1" depressed small color="blue-grey" @click="goBack"><v-icon dark>mdi-keyboard-backspace</v-icon> Go back</v-btn>
                 </div>
             </div>
+            {{axiosAction}}
               <validation-observer ref="observer">
+                <v-alert dense text dismissible v-show="alertError" class="mb-0" type="error">The vehicle was created successfully.</v-alert>
                 <form @submit.prevent="submit" class="mt-5">
                     <v-row>
                         <v-col md="6" cols="12">
                             <validation-provider name="Make" rules="required" v-slot="{errors}">
                                 <v-select v-model="vehicle.make" :items="makes" item-text="name" :error-messages="errors" item-value="id" label="Make" @change="getModels"></v-select>
                             </validation-provider>
-                            <validation-provider name="year" rules="required" v-slot="{errors}">
-                                <v-text-field v-model="vehicle.year" :error-messages="errors" :counter="4" label="Year"></v-text-field>
+                            <validation-provider name="year" rules="required|min:4|max:4" v-slot="{errors}">
+                                <v-text-field v-model="vehicle.year" type="number" :error-messages="errors" :counter="4" label="Year"></v-text-field>
                             </validation-provider>
                             <validation-provider name="fuel" rules="required" v-slot="{errors}">
                                 <v-select v-model="vehicle.fuel" :error-messages="errors" item-text="name" item-value="id" :items="fuels" label="Fuel"></v-select>
@@ -32,8 +34,12 @@
                             <v-checkbox v-model="vehicle.status" label="Status of vehicle"></v-checkbox>
                         </v-col>
                         <v-col cols="12">
-                            <v-file-input v-model="vehicle.image" label="Vehicle image" filled accept="image/*" prepend-icon="mdi-camera"></v-file-input>
-                            <v-textarea  v-model="vehicle.description" label="Description" hint="Description about vehicle"></v-textarea>
+                            <validation-provider rules="image" v-slot="{ errors }">
+                                <v-file-input v-model="vehicle.image" :error-messages="errors" label="Vehicle image" filled accept="image/*" prepend-icon="mdi-camera"></v-file-input>
+                            </validation-provider>
+                            <validation-provider name="Description" rules="max:200" v-slot="{errors}">
+                                <v-textarea  v-model="vehicle.description" label="Description" :error-messages="errors" hint="Description about vehicle"></v-textarea>
+                            </validation-provider>
                         </v-col> 
                         <v-col cols="12" class="text-right">
                             <v-btn class="mr-4" @click="clear">clear</v-btn>
@@ -50,6 +56,9 @@
                 </div>
             </div>
             <v-row>
+                <v-col sm="12" cols="12" v-show="alertCreated">
+                    <v-alert dense text dismissible class="mb-0" type="success">The vehicle was created successfully.</v-alert>
+                </v-col>
                 <v-col sm="4" cols="12" v-for="vehicle in vehicles" :key="vehicle.id">
                     <v-card class="mt-5" max-width="344">
                         <v-img :src="vehicle.image" height="200px"></v-img>
@@ -88,8 +97,8 @@ import { messages } from 'vee-validate/dist/locale/en.json';
 
 Object.keys(rules).forEach(rule => {
     extend(rule, {
-    ...rules[rule], // copies rule configuration
-    message: messages[rule] // assign message
+    ...rules[rule],
+    message: messages[rule]
   });
 });
 
@@ -107,21 +116,17 @@ export default {
             vehicles:[],
             show: false,
             newVehicle: false,
-            vehicleIndex: -1,
-
-            vehicle:{ make:'', model:'', year:'', vehicle_type:'', fuel:'', condition: true, chassis:'', description:'', status: true, image:[] },
+            axiosAction: true,
             makes:[],
             models:[],
             fuels:[],
             vehicleTypes:[],
+            alertCreated: false,
+            alertError: false,
+            alertErrorMessage: '',
             condition:[{name: 'New', value: 1}, {name: 'Used', value: 0}],
-            select: null,
-            items: [
-                'Item 1',
-                'Item 2',
-                'Item 3',
-                'Item 4',
-            ],
+            vehicle: { make:'', model:'', year:'', vehicle_type:'', fuel:'', condition: 1, chassis:'', description:'', status: true, image:[] },
+            defaultVehicle: { make:'', model:'', year:'', vehicle_type:'', fuel:'', condition: 1, chassis:'', description:'', status: true, image:[] },
         }
     },
     components: {
@@ -139,11 +144,7 @@ export default {
             axios.get(`${this.$apiUrl}/vehicles?api_token=${this.apiToken}`)
             .then((res)=>{
                 this.vehicles = res.data;
-                console.log(this.vehicles);
             })
-            .catch((err)=>{
-                console.log(err);
-            });
         },
 
         getMakes(){
@@ -151,9 +152,6 @@ export default {
             .then((res)=>{
                 this.makes = res.data;
             })
-            .catch((err)=>{
-                console.log(err);
-            });
         },
 
         getModels(){
@@ -161,9 +159,6 @@ export default {
             .then((res)=>{
                 this.models = res.data;
             })
-            .catch((err)=>{
-                console.log(err);
-            });
         },
 
         getFuels(){
@@ -171,9 +166,6 @@ export default {
             .then((res)=>{
                 this.fuels = res.data;
             })
-            .catch((err)=>{
-                console.log(err);
-            });
         },
 
         getVehicleTypes(){
@@ -181,17 +173,9 @@ export default {
             .then((res)=>{
                 this.vehicleTypes = res.data;
             })
-            .catch((err)=>{
-                console.log(err);
-            });
         },
 
         createVehicle() {
-
-            console.log(this.vehicle.image);
-            let fd= new FormData();
-            fd.append('image', this.vehicle.image);
-
             let params = {
                 make_id: this.vehicle.make, 
                 model_id: this.vehicle.model,
@@ -201,52 +185,58 @@ export default {
                 chassis: this.vehicle.chassis,
                 condition: this.vehicle.condition, 
                 description: this.vehicle.description,
-                status: this.vehicle.status,
-                //image: this.vehicle.image, 
-            };
+                status: this.vehicle.status ? 1 : 0}
 
-            fd.append();
+            const formData = new FormData()
+            Object.entries(params).forEach((val) => {
+                formData.append(val[0], val[1])
+            })
 
-            //const headers = {headers: {'Content-Type': 'multipart/form-data' }};
+            formData.append('image', this.vehicle.image)
 
-            axios.post(`${this.$apiUrl}/vehicles?api_token=${this.apiToken}`,params/* , headers */)
+            axios.post(`${this.$apiUrl}/vehicles?api_token=${this.apiToken}`, formData, {headers: {'Content-Type': 'multipart/form-data' }})
             .then((res)=>{
-                this.vehicles.splice(0,0,res.data);
-                //console.log(res.data);
+                this.vehicles.splice(0,0,res.data)
+                this.alertCreated = true
+                this.newVehicle = false
             })
             .catch((err)=>{
-                console.log(err);
+                this.alertErrorMessage = err
+                this.alertError = true
             });
         },
 
         updateVehicle(){
+            console.log('Update');
+        },
 
+        goBack(){
+            this.newVehicle = false
+            this.axiosAction = true
+            this.vehicle = Object.assign({}, this.defaultVehicle)
         },
 
         editVehicle(vehicle){
-            console.log(vehicle);
+            let obj = { make: vehicle.make_id, model: vehicle.model_id, year: vehicle.year, vehicle_type: vehicle.vehicle_type_id, fuel: vehicle.fuel_id, condition: vehicle.condition, chassis: vehicle.chassis, description: vehicle.description, status: vehicle.status == 1 ? true : false }
+            Object.assign(this.vehicle, obj)
+            this.axiosAction = false
+            this.newVehicle = true
         },
 
         async submit(){
-            const isValid = await this.$refs.observer.validate();
+            const isValid = await this.$refs.observer.validate()
             if(isValid){
-                if (this.vehicleIndex > -1) {
-                    this.updateVehicle();
+                if (this.axiosAction) {
+                    this.createVehicle()
                 } else {
-                    this.createVehicle();
+                    this.updateVehicle()
                 }
             }
         },
         clear () {
-            this.$refs.observer.reset();
+            this.$refs.observer.reset()
             return;
         },
     },
 }
 </script>
-<style>
-.v-application .primary--text{
-    color: #4448ee !important;
-    caret-color: #444bee !important;
-}
-</style>

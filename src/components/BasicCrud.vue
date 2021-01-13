@@ -137,48 +137,47 @@ export default {
     getItems(){
       axios.get(`${this.$apiUrl}/${this.endpoint}?api_token=${this.apiToken}`)
       .then((res)=>{
-        this.items = res.data;
-      });
+        this.items = res.data
+      })
     },
 
     createItem(){
-      let params = {name: this.editedItem.name};
+      let params = {name: this.editedItem.name}
 
       axios.post(`${this.$apiUrl}/${this.endpoint}?api_token=${this.apiToken}`, params)
       .then((res)=>{
-        console.log(res);
-        //this.items.push(res.data);
-        //this.showAlert('success',`The ${this.name} was created successfully.`);
+        this.items.push(res.data)
+        this.showAlert('success',`The ${this.name} was created successfully.`)
       })
       .catch((err)=>{
-        this.showAlert('error',err.response.data.name[0]);
+        this.showAlert('error',err.response.data.name[0])
       });
     },
 
     updateItem(){
-      let params = {name: this.editedItem.name};
+      let params = {name: this.editedItem.name}
 
       axios.put(`${this.$apiUrl}/${this.endpoint}/${this.editedItem.id}?api_token=${this.apiToken}`, params)
       .then((res)=>{
-        let index = this.items.findIndex(item => item.id == res.data.id);
-        Object.assign(this.items[index], res.data);
-        this.showAlert('success',`The ${this.name} with id #${res.data.id} was updated.`);
+        let index = this.items.findIndex(item => item.id == res.data.id)
+        Object.assign(this.items[index], res.data)
+        this.showAlert('success',`The ${this.name} with id #${res.data.id} was updated.`)
       })
       .catch(()=>{
-        this.showAlert('error','The name has already been taken.');
-      });
+        this.showAlert('error','The name has already been taken.')
+      })
     },
 
     deleteItem(){
       axios.delete(`${this.$apiUrl}/${this.endpoint}/${this.editedItem.id}?api_token=${this.apiToken}`)
       .then(()=>{
-        this.items.splice(this.editedIndex, 1);
-        this.closeDelete();
-        this.showAlert('success',`The ${this.name} has been removed.`);
+        this.items.splice(this.editedIndex, 1)
+        this.closeDelete()
+        this.showAlert('success',`The ${this.name} has been removed.`)
       })
       .catch((err)=>{
-        this.showAlert('error',err);
-      });
+        this.showAlert('error',err)
+      })
     },
 
     editItem (item) {
@@ -210,21 +209,21 @@ export default {
     },
 
     showAlert(status, message){
-        this.alertStatus = status;
-        this.alertMessage = message;
-        this.alertActive = true;
+        this.alertStatus = status
+        this.alertMessage = message
+        this.alertActive = true
     },
 
     async save () {
-      const isValid = await this.$refs.observer.validate();
+      const isValid = await this.$refs.observer.validate()
 
       if(isValid){
         if (this.editedIndex > -1) {
-          await this.updateItem();
+          await this.updateItem()
         } else {
-          await this.createItem();
+          await this.createItem()
         }
-        this.close();
+        this.close()
       }
     }
   },
