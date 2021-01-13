@@ -18,7 +18,7 @@ app.get(/.*/, function (req, res) {
 const port = process.env.PORT || 8080
 app.listen(port)
 
-app.options('*', cors())
+//app.options('*', cors())
 
 /* 
 app.use(function(req, res, next) {
