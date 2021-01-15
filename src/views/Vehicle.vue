@@ -6,9 +6,8 @@
                     <v-btn class="ma-2 white--text mb-1" depressed small color="blue-grey" @click="goBack"><v-icon dark>mdi-keyboard-backspace</v-icon> Go back</v-btn>
                 </div>
             </div>
-            {{axiosAction}}
               <validation-observer ref="observer">
-                <v-alert dense text dismissible v-show="alertError" class="mb-0" type="error">The vehicle was created successfully.</v-alert>
+                <v-alert dense text dismissible v-show="alertError" class="mb-0" type="error">{{alertErrorMessage}}</v-alert>
                 <form @submit.prevent="submit" class="mt-5">
                     <v-row>
                         <v-col md="6" cols="12">
@@ -35,15 +34,15 @@
                         </v-col>
                         <v-col cols="12">
                             <validation-provider rules="image" v-slot="{ errors }">
-                                <v-file-input v-model="vehicle.image" :error-messages="errors" label="Vehicle image" filled accept="image/*" prepend-icon="mdi-camera"></v-file-input>
+                                <v-file-input v-model="vehicle.image" ref="file" :error-messages="errors" label="Vehicle image" filled accept="image/*" prepend-icon="mdi-camera"></v-file-input>
                             </validation-provider>
                             <validation-provider name="Description" rules="max:200" v-slot="{errors}">
                                 <v-textarea  v-model="vehicle.description" label="Description" :error-messages="errors" hint="Description about vehicle"></v-textarea>
                             </validation-provider>
                         </v-col> 
                         <v-col cols="12" class="text-right">
-                            <v-btn class="mr-4" @click="clear">clear</v-btn>
-                            <v-btn class="white--text" color="green" type="submit">Create</v-btn>
+                            <v-btn class="mr-4" v-show="axiosAction" @click="clear">clear</v-btn>
+                            <v-btn class="white--text" color="green" type="submit">{{axiosAction ? 'Create' : 'Update'}}</v-btn>
                         </v-col>
                     </v-row>
                 </form>
@@ -57,7 +56,7 @@
             </div>
             <v-row>
                 <v-col sm="12" cols="12" v-show="alertCreated">
-                    <v-alert dense text dismissible class="mb-0" type="success">The vehicle was created successfully.</v-alert>
+                    <v-alert dense text dismissible class="mb-0" type="success">{{alertCreatedMessage}}</v-alert>
                 </v-col>
                 <v-col sm="4" cols="12" v-for="vehicle in vehicles" :key="vehicle.id">
                     <v-card class="mt-5" max-width="344">
@@ -72,9 +71,9 @@
 
                             <v-spacer></v-spacer>
 
-                            <v-icon medium class="ml-2 mr-2">mdi-delete</v-icon>
+                            <v-icon medium class="ml-2 mr-2" @click="removeVehicle(vehicle.id)">mdi-delete</v-icon>
                             <v-icon medium class="mr-2" @click="editVehicle(vehicle)">mdi-pencil</v-icon>
-                            <v-icon medium>mdi-eye</v-icon>
+                            <router-link class="text-decoration-none" :to="{ name: 'Vehicles Details', params: { slug: vehicle.slug } }"><v-icon medium>mdi-eye</v-icon></router-link>
                         </v-card-actions>
 
                         <v-expand-transition v-if="vehicle.description">
@@ -86,6 +85,17 @@
                     </v-card>
                 </v-col>
             </v-row>
+            <v-dialog v-model="dialogDelete" max-width="525px">
+            <v-card>
+              <v-card-title class="headline">Are you sure you want to delete this vehicle?</v-card-title>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="blue darken-1" text @click="closeDelete">Cancel</v-btn>
+                <v-btn color="blue darken-1" text @click="deleteVehicle">OK</v-btn>
+                <v-spacer></v-spacer>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
         </v-container>
     </div>
 </template>
@@ -106,7 +116,7 @@ Object.keys(rules).forEach(rule => {
 for (let [rule, validation] of Object.entries(rules)) {
   extend(rule, {
     ...validation
-  });
+  })
 }
 
 export default {
@@ -116,6 +126,7 @@ export default {
             vehicles:[],
             show: false,
             newVehicle: false,
+            dialogDelete: false,
             axiosAction: true,
             makes:[],
             models:[],
@@ -123,55 +134,67 @@ export default {
             vehicleTypes:[],
             alertCreated: false,
             alertError: false,
+            alertCreatedMessage: '',
             alertErrorMessage: '',
+            deleteVehicleId: 0,
             condition:[{name: 'New', value: 1}, {name: 'Used', value: 0}],
-            vehicle: { make:'', model:'', year:'', vehicle_type:'', fuel:'', condition: 1, chassis:'', description:'', status: true, image:[] },
+            vehicle: { id: 0, make:'', model:'', year:'', vehicle_type:'', fuel:'', condition: 1, chassis:'', description:'', status: true, image:[] },
             defaultVehicle: { make:'', model:'', year:'', vehicle_type:'', fuel:'', condition: 1, chassis:'', description:'', status: true, image:[] },
         }
     },
+
     components: {
         ValidationProvider,
         ValidationObserver
     },
-    created(){
-        this.getVehicles();
-        this.getMakes();
-        this.getFuels();
-        this.getVehicleTypes();
+
+    watch: {
+        dialogDelete (val) {
+        val || this.closeDelete()
+        },
     },
+
+    created(){
+        this.getVehicles()
+        this.getMakes()
+        this.getFuels()
+        this.getVehicleTypes()
+    },
+
     methods: {
         getVehicles(){
             axios.get(`${this.$apiUrl}/vehicles?api_token=${this.apiToken}`)
             .then((res)=>{
-                this.vehicles = res.data;
+                this.vehicles = res.data
             })
         },
 
         getMakes(){
             axios.get(`${this.$apiUrl}/makes?api_token=${this.apiToken}`)
             .then((res)=>{
-                this.makes = res.data;
+                this.makes = res.data
             })
         },
 
-        getModels(){
-            axios.get(`${this.$apiUrl}/models?api_token=${this.apiToken}&make=${this.vehicle.make}`)
+        getModels(event){
+            axios.get(`${this.$apiUrl}/models/${this.vehicle.make}?api_token=${this.apiToken}`)
             .then((res)=>{
-                this.models = res.data;
+                if(event) this.vehicle.model = ''
+                this.models = res.data
             })
         },
 
         getFuels(){
             axios.get(`${this.$apiUrl}/fuels?api_token=${this.apiToken}`)
             .then((res)=>{
-                this.fuels = res.data;
+                this.fuels = res.data
             })
         },
 
         getVehicleTypes(){
             axios.get(`${this.$apiUrl}/vehicletypes?api_token=${this.apiToken}`)
             .then((res)=>{
-                this.vehicleTypes = res.data;
+                this.vehicleTypes = res.data
             })
         },
 
@@ -197,30 +220,88 @@ export default {
             axios.post(`${this.$apiUrl}/vehicles?api_token=${this.apiToken}`, formData, {headers: {'Content-Type': 'multipart/form-data' }})
             .then((res)=>{
                 this.vehicles.splice(0,0,res.data)
+                this.alertCreatedMessage = 'The vehicle was created successfully.'
                 this.alertCreated = true
                 this.newVehicle = false
+                this.alertError = false
             })
             .catch((err)=>{
                 this.alertErrorMessage = err
                 this.alertError = true
-            });
+            })
         },
 
         updateVehicle(){
-            console.log('Update');
+            let params = {
+                make_id: this.vehicle.make, 
+                model_id: this.vehicle.model,
+                fuel_id: this.vehicle.fuel, 
+                vehicle_type_id: this.vehicle.vehicle_type,
+                year: this.vehicle.year, 
+                chassis: this.vehicle.chassis,
+                condition: this.vehicle.condition, 
+                description: this.vehicle.description,
+                status: this.vehicle.status ? 1 : 0}
+
+            const formData = new FormData()
+            Object.entries(params).forEach((val) => {
+                formData.append(val[0], val[1])
+            })
+
+            formData.append('image', this.vehicle.image)
+
+            axios.post(`${this.$apiUrl}/vehicles/${this.vehicle.id}?api_token=${this.apiToken}`, formData, {headers: {'Content-Type': 'multipart/form-data' }})
+            .then((res)=>{
+                let index = this.vehicles.findIndex(vehicle => vehicle.id == res.data.id)
+                Object.assign(this.vehicles[index], res.data)
+                this.alertError = false
+                this.$router.push({ name: "Vehicles Details", params: { slug: res.data.slug }})
+            })
+            .catch((err)=>{
+                this.alertErrorMessage = err
+                this.alertError = true
+            })
+        },
+
+        deleteVehicle(){
+            axios.delete(`${this.$apiUrl}/vehicles/${this.deleteVehicleId}?api_token=${this.apiToken}`)
+            .then(() => {
+                let index = this.vehicles.findIndex(vehicle => vehicle.id == this.deleteVehicleId)
+                this.vehicles.splice(index,1)
+                this.closeDelete()
+                this.alertCreatedMessage = 'The vehicle was deleted successfully.'
+                this.alertCreated = true
+            })
+            .catch((err) => {
+                console.log(err)
+            })
         },
 
         goBack(){
             this.newVehicle = false
             this.axiosAction = true
+            this.alertError = false
             this.vehicle = Object.assign({}, this.defaultVehicle)
         },
 
         editVehicle(vehicle){
-            let obj = { make: vehicle.make_id, model: vehicle.model_id, year: vehicle.year, vehicle_type: vehicle.vehicle_type_id, fuel: vehicle.fuel_id, condition: vehicle.condition, chassis: vehicle.chassis, description: vehicle.description, status: vehicle.status == 1 ? true : false }
+            let obj = { id: vehicle.id, make: vehicle.make_id, model: vehicle.model_id, year: vehicle.year, vehicle_type: vehicle.vehicle_type_id, fuel: vehicle.fuel_id, condition: vehicle.condition, chassis: vehicle.chassis, description: vehicle.description, status: vehicle.status == 1 ? true : false }
             Object.assign(this.vehicle, obj)
+            this.getModels()
             this.axiosAction = false
             this.newVehicle = true
+        },
+
+        removeVehicle(id){
+            this.deleteVehicleId = id
+            this.dialogDelete = true
+        },
+
+        closeDelete () {
+            this.dialogDelete = false
+            this.$nextTick(() => {
+                this.deleteVehicleId = 0
+            })
         },
 
         async submit(){
@@ -240,3 +321,8 @@ export default {
     },
 }
 </script>
+<style>
+    .text-decoration-none{
+        text-decoration: none;
+    }
+</style>

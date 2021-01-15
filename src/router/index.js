@@ -2,6 +2,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
 import Vehicle from '../views/Vehicle.vue'
+import VehicleDetails from '../views/VehicleDetails.vue'
 import VehicleType from '../views/VehicleType.vue'
 import Make from '../views/Make.vue'
 import Model from '../views/Model.vue'
@@ -25,6 +26,15 @@ const routes = [
       title: 'Vue Cars | Vehicles',
     },
     component: Vehicle
+  },
+  {
+    path: '/vehicles/:slug',
+    name: 'Vehicles Details',
+    meta:{
+      title: 'Vue Cars | Vehicles',
+    },
+    params: true,
+    component: VehicleDetails
   },
   {
     path: '/vehicle-types',
