@@ -139,14 +139,14 @@ export default {
 
   methods: {
     getItems(){
-      axios.get(`${this.$apiUrl}/models?api_token=${this.apiToken}`)
+      axios.get(`${this.$apiUrl}/models`, {headers: {'api_token': this.apiToken }})
       .then((res)=>{
         this.items = res.data;
       });
     },
 
     getMakes(){
-        axios.get(`${this.$apiUrl}/makes?api_token=${this.apiToken}`)
+        axios.get(`${this.$apiUrl}/makes`, {headers: {'api_token': this.apiToken }})
         .then((res)=>{
             this.makes = res.data;
         });
@@ -155,7 +155,7 @@ export default {
     createItem(){
       let params = {name: this.editedItem.name, make: this.editedItem.make};
 
-      axios.post(`${this.$apiUrl}/models?api_token=${this.apiToken}`, params)
+      axios.post(`${this.$apiUrl}/models`, params, {headers: {'api_token': this.apiToken }})
       .then((res)=>{
         this.items.push(res.data);
         this.showAlert('success',`The model was created successfully.`);
@@ -168,7 +168,7 @@ export default {
     updateItem(){
       let params = {name: this.editedItem.name, make: this.editedItem.make};
 
-      axios.put(`${this.$apiUrl}/models/${this.editedItem.id}?api_token=${this.apiToken}`, params)
+      axios.put(`${this.$apiUrl}/models/${this.editedItem.id}`, params, {headers: {'api_token': this.apiToken }})
       .then((res)=>{
         let index = this.items.findIndex(item => item.id == res.data.id);
         Object.assign(this.items[index], res.data);
@@ -180,7 +180,7 @@ export default {
     },
 
     deleteItem(){
-      axios.delete(`${this.$apiUrl}/models?api_token=${this.apiToken}&id=${this.editedItem.id}`)
+      axios.delete(`${this.$apiUrl}/models&id=${this.editedItem.id}`, {headers: {'api_token': this.apiToken }})
       .then(()=>{
         this.items.splice(this.editedIndex, 1);
         this.closeDelete();
