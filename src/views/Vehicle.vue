@@ -163,21 +163,21 @@ export default {
 
     methods: {
         getVehicles(){
-            axios.get(`${this.$apiUrl}/vehicles?api_token=${this.apiToken}`)
+            axios.get(`${this.$apiUrl}/vehicles`, {headers: {'api_token': this.apiToken }})
             .then((res)=>{
                 this.vehicles = res.data
             })
         },
 
         getMakes(){
-            axios.get(`${this.$apiUrl}/makes?api_token=${this.apiToken}`)
+            axios.get(`${this.$apiUrl}/makes`, {headers: {'api_token': this.apiToken }})
             .then((res)=>{
                 this.makes = res.data
             })
         },
 
         getModels(event){
-            axios.get(`${this.$apiUrl}/models/${this.vehicle.make}?api_token=${this.apiToken}`)
+            axios.get(`${this.$apiUrl}/models/${this.vehicle.make}`, {headers: {'api_token': this.apiToken }})
             .then((res)=>{
                 if(event) this.vehicle.model = ''
                 this.models = res.data
@@ -185,14 +185,14 @@ export default {
         },
 
         getFuels(){
-            axios.get(`${this.$apiUrl}/fuels?api_token=${this.apiToken}`)
+            axios.get(`${this.$apiUrl}/fuels`, {headers: {'api_token': this.apiToken }})
             .then((res)=>{
                 this.fuels = res.data
             })
         },
 
         getVehicleTypes(){
-            axios.get(`${this.$apiUrl}/vehicletypes?api_token=${this.apiToken}`)
+            axios.get(`${this.$apiUrl}/vehicletypes`, {headers: {'api_token': this.apiToken }})
             .then((res)=>{
                 this.vehicleTypes = res.data
             })
@@ -217,7 +217,7 @@ export default {
 
             formData.append('image', this.vehicle.image)
 
-            axios.post(`${this.$apiUrl}/vehicles?api_token=${this.apiToken}`, formData, {headers: {'Content-Type': 'multipart/form-data' }})
+            axios.post(`${this.$apiUrl}/vehicles`, formData, {headers: {'Content-Type': 'multipart/form-data', 'api_token': this.apiToken }})
             .then((res)=>{
                 this.vehicles.splice(0,0,res.data)
                 this.alertCreatedMessage = 'The vehicle was created successfully.'
@@ -250,7 +250,7 @@ export default {
 
             formData.append('image', this.vehicle.image)
 
-            axios.post(`${this.$apiUrl}/vehicles/${this.vehicle.id}?api_token=${this.apiToken}`, formData, {headers: {'Content-Type': 'multipart/form-data' }})
+            axios.post(`${this.$apiUrl}/vehicles/${this.vehicle.id}`, formData, {headers: {'Content-Type': 'multipart/form-data', 'api_token': this.apiToken }})
             .then((res)=>{
                 let index = this.vehicles.findIndex(vehicle => vehicle.id == res.data.id)
                 Object.assign(this.vehicles[index], res.data)
@@ -264,7 +264,7 @@ export default {
         },
 
         deleteVehicle(){
-            axios.delete(`${this.$apiUrl}/vehicles/${this.deleteVehicleId}?api_token=${this.apiToken}`)
+            axios.delete(`${this.$apiUrl}/vehicles/${this.deleteVehicleId}`, {headers: {'api_token': this.apiToken }})
             .then(() => {
                 let index = this.vehicles.findIndex(vehicle => vehicle.id == this.deleteVehicleId)
                 this.vehicles.splice(index,1)

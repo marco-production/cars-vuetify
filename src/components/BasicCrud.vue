@@ -135,7 +135,7 @@ export default {
 
   methods: {
     getItems(){
-      axios.get(`${this.$apiUrl}/${this.endpoint}?api_token=${this.apiToken}`)
+      axios.get(`${this.$apiUrl}/${this.endpoint}`, {headers: {'api_token': this.apiToken }})
       .then((res)=>{
         this.items = res.data
       })
@@ -144,7 +144,7 @@ export default {
     createItem(){
       let params = {name: this.editedItem.name}
 
-      axios.post(`${this.$apiUrl}/${this.endpoint}?api_token=${this.apiToken}`, params)
+      axios.post(`${this.$apiUrl}/${this.endpoint}`, params, {headers: {'api_token': this.apiToken }})
       .then((res)=>{
         this.items.push(res.data)
         this.showAlert('success',`The ${this.name} was created successfully.`)
@@ -157,7 +157,7 @@ export default {
     updateItem(){
       let params = {name: this.editedItem.name}
 
-      axios.put(`${this.$apiUrl}/${this.endpoint}/${this.editedItem.id}?api_token=${this.apiToken}`, params)
+      axios.put(`${this.$apiUrl}/${this.endpoint}/${this.editedItem.id}`, params, {headers: {'api_token': this.apiToken }})
       .then((res)=>{
         let index = this.items.findIndex(item => item.id == res.data.id)
         Object.assign(this.items[index], res.data)
@@ -169,7 +169,7 @@ export default {
     },
 
     deleteItem(){
-      axios.delete(`${this.$apiUrl}/${this.endpoint}/${this.editedItem.id}?api_token=${this.apiToken}`)
+      axios.delete(`${this.$apiUrl}/${this.endpoint}/${this.editedItem.id}`, {headers: {'api_token': this.apiToken }})
       .then(()=>{
         this.items.splice(this.editedIndex, 1)
         this.closeDelete()
