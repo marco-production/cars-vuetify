@@ -11,7 +11,7 @@ import '@mdi/font/css/materialdesignicons.css'
 
 Vue.config.productionTip = false
 Vue.use(VueAxios, axios)
-Vue.prototype.$apiUrl = 'http://localhost:8000/';
+Vue.prototype.$apiUrl = 'http://cars.laradex.com/';
 
 new Vue({
   router,
