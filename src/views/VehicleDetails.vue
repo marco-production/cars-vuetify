@@ -10,7 +10,7 @@
                     ></v-img>
                 </v-col>
                 <v-col md="6" cols="12">
-                    <h2 class="mb-3">{{ vehicle.make.name }} {{ vehicle.model.name }} {{ vehicle.year }}</h2>
+                    <h1 class="mb-3">{{ vehicle.make.name }} {{ vehicle.model.name }} {{ vehicle.year }}</h1>
                     <p><span class="font-weight-bold">Vehicle Type:</span> {{ vehicle.vehicle_type.name }}</p>
                     <p><span class="font-weight-bold">Fuel:</span> {{ vehicle.fuel.name }}</p>
                     <p><span class="font-weight-bold">Chassis:</span> {{ vehicle.chassis }}</p>
